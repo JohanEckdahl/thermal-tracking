@@ -22,6 +22,5 @@ class Track():
         
     def get_data(self): return self.dataframe
     
-    def __del__(self):
-        self.dataframe['end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')   
+    def __del__(self): 
         print("Track {} deleted".format(self.id))

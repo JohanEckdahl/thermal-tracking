@@ -24,7 +24,6 @@ class Tracker():
     def save_delete_track(self, track):
         dataframe = track.get_data()
         self.db.insert('track', dataframe)
-        print("deleting {}".format(track.id))
         del self.tracks[track.id]
         
     def update(self, centroidsXY):
@@ -38,7 +37,7 @@ class Tracker():
                 track_object.append_position(centroidsXY[index])
                 centroidsXY = np.delete(centroidsXY, index, 0)
                 #print("Track {} Position: {}".format(track_id, track_object.current_position()))
-            #else: self.save_delete_track(track_object)
+            else: self.save_delete_track(track_object)
                 
         for row in centroidsXY:
             self.create_track(row)
