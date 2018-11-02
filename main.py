@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import sys
-sys.path.append('.')
+import settings
 from includes.camera import CentroidTracking as camera
 
 
 url  = 'http://root:pass@192.168.0.90/mjpg/video.mjpg'
-url = './media/lawn.mov'
+url = settings.project_path + '/media/lawn.mov'
 
 
 
@@ -16,5 +15,7 @@ a.open_kernel = (2,2)
 a.close_kernel = (2,2)
 a.thresh_px = 200
 a.centroid_markers = False
-a.min_contour_area = 2
+a.min_contour_area = 3
+a.rec_fps = 33
+
 a.record()

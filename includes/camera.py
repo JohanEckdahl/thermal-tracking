@@ -9,16 +9,20 @@ class Camera():
     open_kernel = (5,5)
     close_kernel = (5,5)
     min_contour_area = 2000
+    rec_fps = 30
 
     def __init__(self, url, source = ""):
-	    self.cap = cv2.VideoCapture(url)
+        self.cap = cv2.VideoCapture(url)
 
     def _get_frame(self):
         ret, frame = self.cap.read()
         return frame
 
-    def _grayscale(self, img):
-	    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #--- Image Processing ---#
+
+    def _process(self, frame): return frame
+
+    def _grayscale(self, img): return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     def _threshold(self, img):
         retval, img = cv2.threshold(img, self.thresh_px, 255,cv2.THRESH_BINARY)
@@ -37,12 +41,15 @@ class Camera():
         return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
 
     def _find_contours(self, img):
-        im2, contours, hierarchy = cv2.findContours(img,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        im2, contours, hierarchy = cv2.findContours(img,
+                                                    cv2.RETR_TREE,
+                                                    cv2.CHAIN_APPROX_SIMPLE)
         return contours
 
-    def _draw_track(self, img, coordinates, track_id):
+    def _draw_track(self, img, coordinates):
         return cv2.polylines(img, np.int32([coordinates]), 0, (180,180,180))
     
+
     def _find_centroids(self, img, min_area):
         contours = self._find_contours(img)
         centroidsXY = np.empty((0,2),int)
@@ -58,14 +65,16 @@ class Camera():
                 centroidsXY = np.append(centroidsXY, [[cX, cY]], axis=0)
         return centroidsXY
     
+
     def _mark_centroids(self, img):
         centroidsXY = self._find_centroids(img, self.min_contour_area)
         for X,Y in centroidsXY:
             cv2.circle(img, (X, Y), 5, (100, 100, 255), -1)
-            cv2.putText(img, "centroid", (X - 25, Y - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)
+            cv2.putText(img, "centroid", (X - 25, Y - 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)
         return img
     
-    def _process(self, frame): return frame
+   
     
     def record(self):
         while self.cap.isOpened():
@@ -94,7 +103,8 @@ class Centroid(Camera):
 
 
 class CentroidTracking(Centroid):
-    db_path = "../db.sqlite3"
+    db_path = "db.sqlite3"
+    
     def record(self):
         tracker = Tracker(self.db_path)
         
@@ -106,13 +116,14 @@ class CentroidTracking(Centroid):
                 centroids = self._find_centroids(img, self.min_contour_area)
                 tracker.update(centroids)
                 #img = frame
-                for track_id, track_object in tracker.tracks.items():
-                    img = self._draw_track(img,track_object.position, track_object.id)
+                for track_object in tracker.tracks:
+                    if track_object.is_real():
+                        img = self._draw_track(img, track_object.position)
+                    else: pass
 
 
                 cv2.imshow('hi',img)
-                if cv2.waitKey(50) & 0xFF == ord('q'):
-                    break
+                if cv2.waitKey(self.rec_fps) & 0xFF == ord('q'): break
             else: break    
         self.cap.release()
         cv2.destroyAllWindows()
