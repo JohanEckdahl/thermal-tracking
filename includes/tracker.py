@@ -1,14 +1,12 @@
 import numpy as np
-from collections import OrderedDict
 from .database import *
 from .track import *
 
 class Tracker():
     frame = 1
+    
     def __init__(self,db_path):
-        self.i = 1
-        self.tracks = []
-        self.db = SQLiteDB(db_path)
+        self.i, self.tracks, self.db = 1, [], SQLiteDB(db_path) 
         print("Tracker online, let's do this!")
         
     def __del__(self):
@@ -23,9 +21,7 @@ class Tracker():
         
     def save_track(self, track):
         dataframe = track.get_data()
-        print(dataframe)
         self.db.insert('track', dataframe)
-        #del self.tracks[track.id]
         
 
     def update(self, centroidsXY):
@@ -34,16 +30,17 @@ class Tracker():
             if len(centroidsXY) > 0:
                 distances = np.empty((0),int)
                 for row in centroidsXY:
-                    d = np.linalg.norm(row-track.current_position())
+                    d = np.linalg.norm(row-track.predict_position(track.lost + 1))
+                    #d = np.linalg.norm(row-track.current_position())
                     distances = np.append(distances, d)
                 index = np.argmin(distances)
-                track.append_position(centroidsXY[index])
-                track.frames.append(self.frame)
-                centroidsXY = np.delete(centroidsXY, index, 0)
+                if distances[index] < 60:
+                    track.append_position(centroidsXY[index])
+                    track.frames.append(self.frame)
+                    centroidsXY = np.delete(centroidsXY, index, 0)
+                else: track.lost += 1
             else:
-                print("Shit, track {} dissapaeared!".format(track.id))
-                print(track.predict_position(track.lost))
-                track.append_position(track.predict_position(track.lost))
+                #print("Shit, track {} dissapaeared!".format(track.id))
                 track.lost += 1
             if track.lost > 30:
                 del self.tracks[h]

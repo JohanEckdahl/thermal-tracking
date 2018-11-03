@@ -47,6 +47,8 @@ class Camera():
         return contours
 
     def _draw_track(self, img, coordinates):
+        for xy in coordinates:
+            img = cv2.circle(img, tuple(map(int,xy)), 2, (100, 100, 255), -1)
         return cv2.polylines(img, np.int32([coordinates]), 0, (180,180,180))
     
 
@@ -55,10 +57,8 @@ class Camera():
         centroidsXY = np.empty((0,2),int)
         for c in contours:
             if cv2.contourArea(c) > min_area:
-
                # calculate moments for each contour
                 M = cv2.moments(c)
-
                 # calculate x,y coordinate of center
                 try: cX, cY= int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
                 except: pass
@@ -112,17 +112,19 @@ class CentroidTracking(Centroid):
             frame = self._get_frame()
             if frame is not None:
                 img = self._process(frame)
-
                 centroids = self._find_centroids(img, self.min_contour_area)
                 tracker.update(centroids)
-                #img = frame
                 for track_object in tracker.tracks:
-                    if track_object.is_real():
-                        img = self._draw_track(img, track_object.position)
+                    if True: #track_object.is_real():
+                        img = self._draw_track(frame, track_object.position)
+                        img = cv2.circle(img, tuple(map(int,track_object.predict_position(5))), 5, (250, 250, 255), -1)
+                        img = cv2.circle(img, tuple(map(int,track_object.current_position())), 3, (100, 100, 255), -1)
+                        img = cv2.putText(img, str(track_object.id), tuple(map(int,track_object.current_position())),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)
                     else: pass
 
 
-                cv2.imshow('hi',img)
+                cv2.imshow('hi', img)
                 if cv2.waitKey(self.rec_fps) & 0xFF == ord('q'): break
             else: break    
         self.cap.release()
