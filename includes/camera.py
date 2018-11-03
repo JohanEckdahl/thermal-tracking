@@ -117,7 +117,7 @@ class CentroidTracking(Centroid):
                 for track_object in tracker.tracks:
                     if True: #track_object.is_real():
                         img = self._draw_track(frame, track_object.position)
-                        img = cv2.circle(img, tuple(map(int,track_object.predict_position(5))), 5, (250, 250, 255), -1)
+                        img = cv2.circle(img, tuple(map(int,track_object.predict_position(1))), 5, (250, 250, 255), -1)
                         img = cv2.circle(img, tuple(map(int,track_object.current_position())), 3, (100, 100, 255), -1)
                         img = cv2.putText(img, str(track_object.id), tuple(map(int,track_object.current_position())),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)

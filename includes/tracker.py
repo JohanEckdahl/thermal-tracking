@@ -10,8 +10,9 @@ class Tracker():
         print("Tracker online, let's do this!")
         
     def __del__(self):
-        for track_object in self.tracks:
-            pass #del track_object
+        for track in self.tracks:
+            if track.is_real(): self.save_track(track)
+            del track
         print("Tracker is off, night night.")
         del self.db
 
@@ -31,7 +32,7 @@ class Tracker():
                 distances = np.empty((0),int)
                 for row in centroidsXY:
                     d = np.linalg.norm(row-track.predict_position(track.lost + 1))
-                    #d = np.linalg.norm(row-track.current_position())
+                    d = np.linalg.norm(row-track.current_position())
                     distances = np.append(distances, d)
                 index = np.argmin(distances)
                 if distances[index] < 60:
@@ -43,6 +44,7 @@ class Tracker():
                 #print("Shit, track {} dissapaeared!".format(track.id))
                 track.lost += 1
             if track.lost > 30:
+                if track.is_real(): save_track(track)
                 del self.tracks[h]
             h +=1
         
