@@ -3,6 +3,7 @@ from .database import *
 from .track import *
 
 class Tracker():
+    '''This is the tracker class'''
     frame = 1
     
     def __init__(self,db_path):
@@ -26,6 +27,7 @@ class Tracker():
         
 
     def update(self, centroidsXY):
+        '''The core function \m/(-_-)\m/'''
         h = 0
         for track in self.tracks: 
             if len(centroidsXY) > 0:
