@@ -47,19 +47,17 @@ class Camera():
 
     def _display(self,img): cv2.imshow('hi',img)
    
-    def _draw_track(self, img, coordinates):
+    def _draw_track(self, img, coordinates,color):
         for xy in coordinates:
-            img = cv2.circle(img, tuple(map(int,xy)), 2, (100, 100, 255), -1)
-        return cv2.polylines(img, np.int32([coordinates]), 0, (180,180,180))
+            img = cv2.circle(img, tuple(map(int,xy)), 2, color, -1)
+        return cv2.polylines(img, np.int32([coordinates]), 0, color)
 
-    def _find_centroids(self, img, min_area):
+    def _find_centroids(self, img):
         contours = self._find_contours(img)
         centroidsXY = np.empty((0,2),int)
         for c in contours:
-            if cv2.contourArea(c) > min_area:
-               # calculate moments for each contour
+            if cv2.contourArea(c) > self.min_contour_area:
                 M = cv2.moments(c)
-                # calculate x,y coordinate of center
                 try: cX, cY= int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
                 except: pass
                 centroidsXY = np.append(centroidsXY, [[cX, cY]], axis=0)
@@ -94,7 +92,7 @@ class Centroid(Camera):
         img = self._erode(img)
         img = self._opening(img)
         img = self._closing(img)
-        self.centroidsXY = self._find_centroids(img, self.min_contour_area)
+        self.centroidsXY = self._find_centroids(img)
 
     def _display(self, img):
         img = self._mark_centroids(img, self.centroidsXY)
@@ -110,9 +108,10 @@ class CentroidTracking(Centroid):
 
     def _display(self, img):
         for track_object in self.tracker.tracks:
-            if True: #track_object.is_real():
-                img = self._draw_track(img, track_object.position)
-                predicted =  tuple(map(int,track_object.predict_position(1)))
+            if True:#track_object.is_real():
+                img = self._draw_track(img, track_object.position,(255, 255, 255))
+                img = self._draw_track(img, track_object.predicted_position,(255, 0,0))
+                predicted =  tuple(map(int,track_object.predict_position(6)))
                 current   =  tuple(map(int,track_object.current_position()))
                 img = cv2.circle(img, predicted, 5, (250, 250, 255), -1)
                 img = cv2.circle(img, current, 3, (100, 100, 255), -1)

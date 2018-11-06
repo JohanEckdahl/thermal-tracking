@@ -14,6 +14,6 @@ a.open_kernel       =   (2,2)
 a.close_kernel      =   (2,2)
 a.thresh_px         =   200
 a.min_contour_area  =   2
-a.rec_fps           =   33
+a.rec_fps           =  33
 
 a.record()
