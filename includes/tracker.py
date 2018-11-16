@@ -6,23 +6,21 @@ class Tracker():
     '''This is the tracker class'''
     
     def __init__(self,db_path):
-        self.i, self.tracks, self.db = 1, [], SQLiteDB(db_path) 
-        self.frame = 1
+        self._i, self.frame, self.tracks, self.db = 1, 1, [], SQLiteDB(db_path)
+        self.max_distance=45
         print("Tracker online, let's do this!")
         
     def __del__(self):
         for track in self.tracks:
             if track.is_real(): self.save_track(track)
             del track
-        print("Tracker is off, night night.")
         del self.db
+        print("Tracker is off, night night.")
+        
 
     def _calculate_distance(self, row, track):
-        x = row
-        y = track.predict_position(track.lost + 1)
-        z=x-y
-        d = np.linalg.norm(z)            
-        return d
+        x, y = row, track.predict_position(track.lost + 1)
+        return np.linalg.norm(x-y)
 
     def _calculate_angle(self, row, track):
         a = np.degrees(np.arctan2(row[1], row[0]))
@@ -31,102 +29,37 @@ class Tracker():
 
 
     def create_track(self, position):
-        track = Track(self.i, position, self.frame)
-        self.tracks.append(track)
-        self.i += 1
+        self.tracks.append(Track(self._i, position, self.frame))
+        self._i += 1
         
-    def save_track(self, track):
-        dataframe = track.get_data()
-        self.db.insert('track', dataframe)
+    def save_track(self, track): self.db.insert('track', track.get_data())
 
 
-    def update(self, centroidsXY):
+    def update(self, centroids):
         '''The core function \m/(-_-)\m/'''
         h = 0
         for track in self.tracks:
-            if len(centroidsXY) > 0:
-                distances = np.empty((0),int)
-                for row in centroidsXY:
-                    distance = self._calculate_distance(row, track)
-                    angle = self._calculate_angle(row, track)
-                    if distance < 50: # and angle < 40:
+            if len(centroids) > 0:
+                distances = np.empty((0),dtype=np.float32)
+                for centroid in centroids:
+                    distance = self._calculate_distance(centroid, track)
+                    angle = self._calculate_angle(centroid, track)
+                    if distance < self.max_distance: # and angle < 40:
                         distances = np.append(distances, distance)
                     else: distances = np.append(distances, np.Inf)
                 index = np.argmin(distances)
                 if distances[index] != np.Inf:                
-                    track.append_position(centroidsXY[index], self.frame)
-                    centroidsXY = np.delete(centroidsXY, index, 0)
+                    track.append_position(centroids[index], self.frame)
+                    centroids = np.delete(centroids, index, 0)
                 else: track.lost += 1
-            else:
-                #print("Shit, track {} dissapaeared!".format(track.id))
-                track.lost += 1
+            else: track.lost += 1
+
             if track.lost > 30:
                 if track.is_real(): self.save_track(track)
                 del self.tracks[h]
             h +=1
         
-        
-        for row in centroidsXY:
+        for row in centroids:
             if len(row) > 0 : self.create_track(row)
         
         self.frame +=1
-
-
-
-'''
-
-def update(self, centroidsXY):
-        h = 0
-        for track in self.tracks: 
-            if len(centroidsXY) > 0:
-                distances = np.empty((0),int)
-                for row in centroidsXY:
-                    d = np.linalg.norm(row-track.predict_position(track.lost + 1))
-                    d = np.linalg.norm(row-track.current_position())
-                    distances = np.append(distances, d)
-                index = np.argmin(distances)
-                if distances[index] < 60:
-                    track.append_position(centroidsXY[index])
-                    track.frames.append(self.frame)
-                    centroidsXY = np.delete(centroidsXY, index, 0)
-                else: track.lost += 1
-            else:
-                #print("Shit, track {} dissapaeared!".format(track.id))
-                track.lost += 1
-            if track.lost > 30:
-                if track.is_real(): self.save_track(track)
-                del self.tracks[h]
-            h +=1
-        
-        self.frame +=1
-        for row in centroidsXY:
-            if len(row) > 0 : self.create_track(row)   
-
-    def update(self, centroidsXY):
-        indices = [i for i in range(len(self.tracks))]
-        for row in centroidsXY:
-            if not any(indices): self.create_track(row)
-            else:
-                distances = np.empty((0),int)
-                for i in indices:
-                    if i:
-                        track = self.tracks[i]                
-                        d = np.linalg.norm(row-track.current_position())
-                        distances = np.append(distances, d)
-                        
-                    else: distances = np.append(distances, np.Inf)
-                index = np.argmin(distances)
-                self.tracks[index].append_position(row)
-                self.tracks[index].frames.append(self.frame)
-                indices[index] = False
-        for i in indices:
-            if i:
-                track = self.tracks[i] 
-                #track.append_position(track.predict_position(track.lost))
-                track.lost += 1
-                if track.lost > 30:
-                    del self.tracks[i]        
-        self.frame +=1
-'''
-
-

@@ -20,10 +20,12 @@ class SQLiteDB(Database):
     
     def connect(self,db_name): return sqlite3.connect(db_name)
     
-    def read(self, sql): return pd.read_sql_query(sql, self.connection, index_col="id")
+    def read(self, sql): return pd.read_sql_query(sql, self.connection,
+                                                  index_col="id")
     
     def insert(self, table_name, dataframe):
-        dataframe.to_sql(table_name, self.connection, if_exists="append", index = False)
+        dataframe.to_sql(table_name, self.connection,
+                         if_exists="append", index = False)
         
     def disconnect(self): self.connection.close()
 
