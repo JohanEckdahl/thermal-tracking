@@ -6,8 +6,8 @@ import time
 
 class Camera():
         
-    def __init__(self, url):
-        self.cap = cv2.VideoCapture(url)
+    def __init__(self, urls):
+        self.caps = [cv2.VideoCapture(url) for url in urls]
         self.thresh_px = 100
         self.erode_kernel = (5,5)
         self.open_kernel = (5,5)
@@ -16,12 +16,12 @@ class Camera():
         self.rec_fps = 30
         self.save_video = False
         self.fps = 30
-        self.image_size = (800,600)
+        self.image_size = (640,480)
 
 
     #--- Image Processing ---#
 
-    def _get_frame(self): return self.cap.read()[1]
+    def _get_frame(self, cap): return cap.read()[1]
 
     def _process(self, frame): return frame
 
@@ -81,27 +81,34 @@ class Camera():
         if self.save_video:
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
             start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-            video_writer = cv2.VideoWriter("./media/"+start+".avi", fourcc,
-                                            self.fps, self.image_size)
+            video_writers = []
+            i=1
+            for cap in self.caps:
+                video_writers += [cv2.VideoWriter("./media/"+start+"_" + str(i) +".avi", fourcc,
+                                            self.fps, self.image_size)]
+                i+=1
         
         def condition(start, timeout): 
             if timeout == 0: return True
             else: return time.time() < start + timeout
    
         timeout_start = time.time()
-        while self.cap.isOpened() and condition(timeout_start, timeout):
-            
-            frame = self._get_frame()
-            if frame is not None:
-                frame = frame[0:600, 0:800] 
-                img = self._process(frame)
-                self._display('machine', img)
-                self._display('camera',frame)
-                if self.save_video: video_writer.write(frame)
-                if cv2.waitKey(self.rec_fps) & 0xFF == ord('q'): break
-            else: print("Frame not here"); break
-        if self.save_video: video_writer.release()
-        self.cap.release()
+        while self.caps[0].isOpened() and condition(timeout_start, timeout):
+            i = 0            
+            for cap in self.caps:
+                frame = self._get_frame(cap)
+                if frame is not None:
+                    frame = frame[0:480, 0:640] 
+                    img = self._process(frame)
+                    self._display('camera{}'.format(i), frame)
+                    if self.save_video: video_writers[i].write(frame)
+                else: print("Frame not here"); break
+                i+=1
+            if cv2.waitKey(self.rec_fps) & 0xFF == ord('q'): break
+                
+        if self.save_video:
+            for video_writer in video_writers: video_writer.release()
+        for cap in self.caps: cap.release()
         cv2.destroyAllWindows()
 #______________________________________________________________________________#
 

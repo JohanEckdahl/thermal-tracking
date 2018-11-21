@@ -2,21 +2,23 @@
 
 import time
 import settings
-from includes.camera import CentroidTracking as camera
+from includes.camera import Camera as camera
 
 
-#url  = 'http://root:pass@192.168.0.90/mjpg/video.mjpg'
-#url = settings.project_path + '/media/2018-11-07_07:13:51.avi'
-url = settings.project_path + '/media/bird1.mp4'
+url  = 'http://root:pass@192.168.0.90/mjpg/video.mjpg'
+url2  = 'http://root:pass@192.168.0.91/mjpg/video.mjpg'
+urls = [url, url2]
+#url = settings.project_path + '/media/bird8.mp4'
+#url = settings.project_path + '/media/bird1.mp4'
 
-a = camera(url)
-a.erode_kernel      =   (4,4)
-a.open_kernel       =   (4,4)
-a.close_kernel      =   (4,4)
+a = camera(urls)
+a.erode_kernel      =   (1,1)
+a.open_kernel       =   (1,1)
+a.close_kernel      =   (1,1)
 a.thresh_px         =  200
-a.min_contour_area  =   5
+a.min_contour_area  =   1
 a.rec_fps           =  33
-a.save_video        =  False
+a.save_video        =  True
 a.record(timeout=0)
 
 
