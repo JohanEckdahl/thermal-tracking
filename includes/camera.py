@@ -6,18 +6,28 @@ import time
 
 class Camera():
         
-    def __init__(self, urls):
-        self.caps = [cv2.VideoCapture(url) for url in urls]
+    def __init__(self, sources):
         self.thresh_px = 100
         self.erode_kernel = (5,5)
         self.open_kernel = (5,5)
         self.close_kernel = (5,5)
-        self.min_contour_area = 2000
+        self.min_contour_area = 2
         self.rec_fps = 30
         self.save_video = False
         self.fps = 30
         self.image_size = (640,480)
+        self.names, urls = zip(*sources.items())
+        self.caps = [cv2.VideoCapture(url) for url in urls]
+            
+    #--- GUI ---#
+    
+    def _create_trackbars(self, name): pass
 
+    def _read_trackbars(self, name): pass
+
+    def _create_window(self, name):
+        cv2.namedWindow(name)
+        self._create_trackbars(name)
 
     #--- Image Processing ---#
 
@@ -27,7 +37,7 @@ class Camera():
 
     def _grayscale(self, img): return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    def _threshold(self, img):
+    def _threshold(self, img): 
         return cv2.threshold(img, self.thresh_px, 255,cv2.THRESH_BINARY)[1]
 
 
@@ -75,39 +85,35 @@ class Camera():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)
         return img
 
-
     #--- Public Method ---#
     def record(self, timeout=0):
         if self.save_video:
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
             start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-            video_writers = []
-            i=1
-            for cap in self.caps:
-                video_writers += [cv2.VideoWriter("./media/"+start+"_" + str(i) +".avi", fourcc,
-                                            self.fps, self.image_size)]
-                i+=1
+            def path(i): return "./media/"+start+"_"+ str(i+1) +".avi"
+            video_writers = [cv2.VideoWriter(path(i), fourcc,
+                             self.fps, self.image_size)
+                             for i, _ in enumerate(self.caps)]
         
-        def condition(start, timeout): 
-            if timeout == 0: return True
-            else: return time.time() < start + timeout
-   
-        timeout_start = time.time()
-        while self.caps[0].isOpened() and condition(timeout_start, timeout):
-            i = 0            
-            for cap in self.caps:
+        for name in self.names: self._create_window(name)
+
+        
+
+        starttime = time.time()
+        while True if timeout == 0 else time.time() < starttime + timeout:
+            for i, cap in enumerate(self.caps):
                 frame = self._get_frame(cap)
                 if frame is not None:
-                    frame = frame[0:480, 0:640] 
+                    frame = frame[0:480, 0:640]
+                    self._read_trackbars(self.names[i])
                     img = self._process(frame)
-                    self._display('camera{}'.format(i), frame)
+                    self._display(self.names[i], img)
                     if self.save_video: video_writers[i].write(frame)
-                else: print("Frame not here"); break
-                i+=1
-            if cv2.waitKey(self.rec_fps) & 0xFF == ord('q'): break
+                else: break
+            if cv2.waitKey(1) & 0xFF == ord('q'): break
                 
         if self.save_video:
-            for video_writer in video_writers: video_writer.release()
+            for writer in video_writers: writer.release()
         for cap in self.caps: cap.release()
         cv2.destroyAllWindows()
 #______________________________________________________________________________#
@@ -122,9 +128,27 @@ class Centroid(Camera):
         self.centroids = self._find_centroids(img)
         return img
 
+    def _create_trackbars(self, name):
+        def n(o): pass
+        cv2.createTrackbar('Threshold', name, 0, 255, n)
+        cv2.setTrackbarPos('Threshold', name, self.thresh_px)
+        cv2.createTrackbar('Open', name, 0, 50, n)
+        cv2.setTrackbarPos('Open', name, self.open_kernel[0])
+        cv2.createTrackbar('Close', name, 0, 50, n)
+        cv2.setTrackbarPos('Close', name, self.close_kernel[0])
+        cv2.createTrackbar('Erode', name, 0, 50, n)
+        cv2.setTrackbarPos('Erode', name, self.erode_kernel[0])
+
+    def _read_trackbars(self, name):
+        self.thresh_px = cv2.getTrackbarPos('Threshold', name)
+        self.open_kernel = (cv2.getTrackbarPos('Open', name),)*2
+        self.close_kernel = (cv2.getTrackbarPos('Close', name),)*2
+        self.erode_kernel = (cv2.getTrackbarPos('Erode', name),)*2
+
+
     def _display(self, name, img):
         img = self._mark_centroids(img, self.centroids)
-        super()._display('Centroids', img)
+        super()._display(name, img)
         return img
 #______________________________________________________________________________#
 
@@ -137,16 +161,16 @@ class CentroidTracking(Centroid):
         return img
 
     def _display(self, name, img):
-        for track_object in self.tracker.tracks:
-            if True:#track_object.is_real():
+        for track in self.tracker.tracks:
+            if track.is_real():
                 white, red, gray = (255,255,255), (0,0,255), (100, 100, 255)
-                img = self._draw_track(img, track_object.position,(white))
-                img = self._draw_track(img, track_object.predicted_position,(red))
-                predicted =  tuple(map(int,track_object.predict_position(1)))
-                current   =  tuple(map(int,track_object.current_position()))
+                img = self._draw_track(img, track.position,(white))
+                img = self._draw_track(img, track.predicted_position,(red))
+                predicted =  tuple(map(int,track.predict_position(1)))
+                current   =  tuple(map(int,track.current_position()))
                 img = cv2.circle(img, predicted, 3, (red), -1)
                 img = cv2.circle(img, current, 3, gray, -1)
-                img = cv2.putText(img, str(track_object.id), current,
+                img = cv2.putText(img, str(track.id), current,
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         Camera._display(self, name, img)
         return img

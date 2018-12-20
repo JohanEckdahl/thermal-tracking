@@ -2,16 +2,16 @@
 
 import time
 import settings
-from includes.camera import Camera as camera
+from includes.camera import Centroid as camera
 
+sources = {"webcam"  : 0,
+	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
+	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
+	   #"bird8"   : settings.project_path + '/media/bird8.mp4',
+	   #"bird1"   : settings.project_path + '/media/bird1.mp4',
+	  }
 
-url  = 'http://root:pass@192.168.0.90/mjpg/video.mjpg'
-url2  = 'http://root:pass@192.168.0.91/mjpg/video.mjpg'
-urls = [url, url2]
-#url = settings.project_path + '/media/bird8.mp4'
-#url = settings.project_path + '/media/bird1.mp4'
-
-a = camera(urls)
+a = camera(sources)
 a.erode_kernel      =   (1,1)
 a.open_kernel       =   (1,1)
 a.close_kernel      =   (1,1)
