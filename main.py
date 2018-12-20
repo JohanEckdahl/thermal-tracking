@@ -4,7 +4,8 @@ import time
 import settings
 from includes.camera import Centroid as camera
 
-sources = {"webcam"  : 0,
+sources = {"webcam"   : 0,
+	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"bird8"   : settings.project_path + '/media/bird8.mp4',
@@ -12,13 +13,15 @@ sources = {"webcam"  : 0,
 	  }
 
 a = camera(sources)
-a.erode_kernel      =   (1,1)
-a.open_kernel       =   (1,1)
-a.close_kernel      =   (1,1)
+a.erode_kernel      =  (1,1)
+a.open_kernel       =  (1,1)
+a.close_kernel      =  (1,1)
 a.thresh_px         =  200
 a.min_contour_area  =   1
-a.rec_fps           =  33
+a.fps               =  30
 a.save_video        =  True
+a.stitch	    =  True
+a.image_size        =  (640,480)
 a.record(timeout=0)
 
 

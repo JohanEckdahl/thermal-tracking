@@ -1,8 +1,9 @@
 import numpy as np
 import cv2
+import time
 from .tracker import *
 from datetime import datetime
-import time
+
 
 class Camera():
         
@@ -14,6 +15,7 @@ class Camera():
         self.min_contour_area = 2
         self.rec_fps = 30
         self.save_video = False
+        self.stitch = False
         self.fps = 30
         self.image_size = (640,480)
         self.names, urls = zip(*sources.items())
@@ -32,6 +34,11 @@ class Camera():
     #--- Image Processing ---#
 
     def _get_frame(self, cap): return cap.read()[1]
+    
+    def _stitch(self,frames):
+        #stitcher = cv2.createStitcher()
+        #status, frame = stitcher.stitch(frames)
+        return frames[0]
 
     def _process(self, frame): return frame
 
@@ -87,24 +94,30 @@ class Camera():
 
     #--- Public Method ---#
     def record(self, timeout=0):
+        if self.stitch:
+            self.names = ["combined"]
         if self.save_video:
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
             start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
             def path(i): return "./media/"+start+"_"+ str(i+1) +".avi"
             video_writers = [cv2.VideoWriter(path(i), fourcc,
                              self.fps, self.image_size)
-                             for i, _ in enumerate(self.caps)]
-        
-        for name in self.names: self._create_window(name)
+                             for i, _ in enumerate(self.names)]
+
+            for name in self.names: self._create_window(name)
 
         
 
         starttime = time.time()
         while True if timeout == 0 else time.time() < starttime + timeout:
-            for i, cap in enumerate(self.caps):
-                frame = self._get_frame(cap)
+            frames = []
+            for cap in self.caps: frames.append(self._get_frame(cap))
+            if self.stitch:
+                frames = [self._stitch(frames)]
+                
+            for i, frame in enumerate(frames):
                 if frame is not None:
-                    frame = frame[0:480, 0:640]
+                    #frame = frame[0:480, 0:640]
                     self._read_trackbars(self.names[i])
                     img = self._process(frame)
                     self._display(self.names[i], img)
@@ -147,7 +160,7 @@ class Centroid(Camera):
 
 
     def _display(self, name, img):
-        img = self._mark_centroids(img, self.centroids)
+        #img = self._mark_centroids(img, self.centroids)
         super()._display(name, img)
         return img
 #______________________________________________________________________________#
