@@ -4,7 +4,7 @@ import time
 import settings
 from includes.camera import Centroid as camera
 
-sources = {"webcam"   : 0,
+sources = {"webcam"   : "./media/image1.jpg",
 	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
@@ -20,7 +20,7 @@ a.thresh_px         =  200
 a.min_contour_area  =   1
 a.fps               =  30
 a.save_video        =  True
-a.stitch	    =  True
+a.stitch	    =  False
 a.image_size        =  (640,480)
 a.record(timeout=0)
 
