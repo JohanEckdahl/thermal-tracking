@@ -4,7 +4,7 @@ import time
 import settings
 from includes.camera import Centroid as camera
 
-sources = {"webcam"   : "./media/image1.jpg",
+sources = {"webcam"   : 0,
 	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',

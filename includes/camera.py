@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 class Camera():
-        
+  
     def __init__(self, sources):
         self.thresh_px = 100
         self.erode_kernel = (5,5)
@@ -35,18 +35,12 @@ class Camera():
 
     def _get_frame(self, cap): return cap.read()[1]
     
-    def _stitch(self,frames):
-        #stitcher = cv2.createStitcher()
-        #status, frame = stitcher.stitch(frames)
-        return frames[0]
-
     def _process(self, frame): return frame
 
     def _grayscale(self, img): return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     def _threshold(self, img): 
         return cv2.threshold(img, self.thresh_px, 255,cv2.THRESH_BINARY)[1]
-
 
     def _erode(self, img):
         kernel = np.ones(self.erode_kernel, np.uint8)
@@ -62,6 +56,19 @@ class Camera():
 
     def _find_contours(self, img):
         return cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    
+    def _get_corrections(self, name): return 0, 0 #mtx, dist
+
+    def _correct_distortion(self,img, mtx, dist):
+        if mtx == 0: return img #if mtx, dist say no correction
+        h, w = img.shape[:2]
+        newmtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+        dst = cv2.undistort(img, mtx, dist, None, newmtx)
+        x,y,w,h = roi
+        img = dst[y:y+h, x:x+w]
+        return img
+
+    def _stitch(self, images): return img
 
     #--- Image Display ---#
 
@@ -92,37 +99,37 @@ class Camera():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 255), 2)
         return img
 
+
     #--- Public Method ---#
     def record(self, timeout=0):
-        if self.stitch:
-            self.names = ["combined"]
+        corrections = [self._get_corrections(name) for name in self.names]
+        
+        if self.stitch: self.names = ["combined"]
         if self.save_video:
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
             def path(i): return "./media/"+start+"_"+ str(i+1) +".avi"
+            start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')            
             video_writers = [cv2.VideoWriter(path(i), fourcc,
                              self.fps, self.image_size)
                              for i, _ in enumerate(self.names)]
 
-            for name in self.names: self._create_window(name)
-
-        
-
+        for name in self.names: self._create_window(name)
+ 
         starttime = time.time()
         while True if timeout == 0 else time.time() < starttime + timeout:
-            frames = []
-            for cap in self.caps: frames.append(self._get_frame(cap))
-            if self.stitch:
-                frames = [self._stitch(frames)]
+            frames= [self._get_frame(cap) for cap in self.caps]
+            c = [(a,*b) for a,b in zip(frames,corrections)]
+            frames= [self._correct_distortion(*d) for d in c]
+            if self.stitch: frames = [self._stitch(frames)]
                 
             for i, frame in enumerate(frames):
                 if frame is not None:
-                    #frame = frame[0:480, 0:640]
                     self._read_trackbars(self.names[i])
                     img = self._process(frame)
                     self._display(self.names[i], img)
                     if self.save_video: video_writers[i].write(frame)
                 else: break
+            
             if cv2.waitKey(1) & 0xFF == ord('q'): break
                 
         if self.save_video:
