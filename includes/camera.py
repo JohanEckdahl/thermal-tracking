@@ -56,6 +56,17 @@ class Camera():
 
     def _find_contours(self, img):
         return cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+
+    def _find_centroids(self, img):
+        contours = self._find_contours(img)
+        centroids = np.empty((0,2),int)
+        for c in contours:
+            if cv2.contourArea(c) > self.min_contour_area:
+                M = cv2.moments(c)
+                try: X, Y= int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
+                except: pass
+                centroids = np.append(centroids, [[X, Y]], axis=0)
+        return centroids
     
     def _get_corrections(self, name): return 0, 0 #mtx, dist
 
@@ -81,17 +92,7 @@ class Camera():
             img = cv2.circle(img, tuple(map(int,xy)), 1, color, -1)
         return cv2.polylines(img, np.int32([coordinates]), 0, color)
 
-    def _find_centroids(self, img):
-        contours = self._find_contours(img)
-        centroids = np.empty((0,2),int)
-        for c in contours:
-            if cv2.contourArea(c) > self.min_contour_area:
-                M = cv2.moments(c)
-                try: X, Y= int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-                except: pass
-                centroids = np.append(centroids, [[X, Y]], axis=0)
-        return centroids
-  
+
     def _mark_centroids(self, img, centroids):
         for X,Y in centroids:
             img = cv2.circle(img, (X, Y), 5, (100, 100, 255), -1)
