@@ -9,11 +9,11 @@ class Track():
         self.id, self.lost, self.frames = id, 0, [frame]
         self.position = self.__reshape2by1(position)
         self.predicted_position = self.__reshape2by1(position)
-        df = {'start_time'     :  [datetime.now().strftime('%Y-%m-%d %H:%M:%S')], 
-              'end_time'       :  [""],
-              'avg_angle'      :  [0.0],
-              'std_angle'      :  [0.0],
-              'frame_count'    :  1,
+        df = {'start_time'    :  [datetime.now().strftime('%Y-%m-%d %H:%M:%S')], 
+              'end_time'      :  [""],
+              'avg_angle'     :  [0.0],
+              'std_angle'     :  [0.0],
+              'frame_count'   :  1,
         }
         self.dataframe = pd.DataFrame.from_dict(df)
 
@@ -72,9 +72,11 @@ class Track():
 
     def append_position(self, position,frame):
         self.frames.append(frame)
-        self.dataframe['end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        self.position = np.append(self.position, self.__reshape2by1(position), axis=0)
-        self.predicted_position = np.append(self.predicted_position, self.__reshape2by1(self.predict_position(self.lost+1)), axis=0)
+        self.dataframe['end_time']= datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.position = np.append(self.position, self.__reshape2by1(position),
+                                  axis=0)
+        self.predicted_position = np.append(self.predicted_position,
+            self.__reshape2by1(self.predict_position(self.lost+1)), axis=0)
         self.dataframe['avg_angle'] = self.__avg_angle(self.__frame_count())
         self.dataframe['frame_count'] = self.__frame_count()
         self.lost = 0
