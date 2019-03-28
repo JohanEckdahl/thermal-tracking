@@ -18,6 +18,7 @@ class Camera():
         self.stitch = False
         self.fps = 30
         self.image_size = (640,480)
+        self.triggered = False
         self.names, urls = zip(*sources.items())
         self.caps = [cv2.VideoCapture(url) for url in urls]
             
@@ -55,7 +56,10 @@ class Camera():
         return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
 
     def _find_contours(self, img):
+        img = img[20:480, 0:640] #Ignore Axis Timestamp
         return cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+
+    def _save_video(self, video_writer, frame): video_writer.write(frame)
 
     def _find_centroids(self, img):
         contours = self._find_contours(img)
@@ -122,15 +126,17 @@ class Camera():
             c = [(a,*b) for a,b in zip(frames,corrections)]
             frames= [self._correct_distortion(*d) for d in c]
             if self.stitch: frames = [self._stitch(frames)]
-                
+            b = 0    
             for i, frame in enumerate(frames):
                 if frame is not None:
                     self._read_trackbars(self.names[i])
                     img = self._process(frame)
                     self._display(self.names[i], img)
-                    if self.save_video: video_writers[i].write(frame)
+                    if self.save_video:
+                        b += 1
+                        self._save_video(video_writers[i], frame)
                 else: break
-            
+            if b == 0: break
             if cv2.waitKey(1) & 0xFF == ord('q'): break
                 
         if self.save_video:
@@ -171,6 +177,10 @@ class Centroid(Camera):
         #img = self._mark_centroids(img, self.centroids)
         super()._display(name, img)
         return img
+
+    def _save_video(self, video_writer, frame):
+        if self.triggered and len(self.centroids): super()._save_video(video_writer, frame)
+        else: pass
 #______________________________________________________________________________#
 
 class CentroidTracking(Centroid):

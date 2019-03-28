@@ -1,4 +1,5 @@
 
+start.sh
 .DS_Store
 media/
 *.sqlite3
