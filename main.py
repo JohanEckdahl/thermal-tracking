@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 
 import time
+<<<<<<< HEAD
 from includes.camera import Centroid as camera
 sources = {"webcam"   : 0,
+=======
+import settings
+from includes.camera import CentroidTracking as camera
+
+sources = {"bird"   : settings.project_path + '/media/old/2018-11-11_15:49:56.avi',
+>>>>>>> 47d2277cd6dbc23d2db7b8d645dcbe87cbabbaf0
 	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
@@ -17,8 +24,9 @@ a.thresh_px         =  200
 a.min_contour_area  =   1
 a.fps               =  30
 a.save_video        =  True
-a.stitch	    =  False
+a.stitch	        =  False
 a.image_size        =  (640,480)
+a.triggered         =  True
 a.record(timeout=0)
 
 

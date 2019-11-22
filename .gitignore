@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 corrections
+=======
+
+start.sh
+>>>>>>> 47d2277cd6dbc23d2db7b8d645dcbe87cbabbaf0
 .DS_Store
 media/
 *.sqlite3
