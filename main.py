@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 
 import time
-<<<<<<< HEAD
-from includes.camera import Centroid as camera
-sources = {"webcam"   : 0,
-=======
 import settings
 from includes.camera import CentroidTracking as camera
 
-sources = {"bird"   : settings.project_path + '/media/old/2018-11-11_15:49:56.avi',
->>>>>>> 47d2277cd6dbc23d2db7b8d645dcbe87cbabbaf0
+sources = {#"bird"   : settings.project_path + '/media/60mmF1.2_1.avi',
 	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
 	   #"camera2" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
-	   #"bird8"   : settings.project_path + '/media/bird8.mp4',
-	   #"bird1"   : settings.project_path + '/media/bird1.mp4',
+	   "camera1"   : settings.project_path + '/media/1250mmF5_2.mp4',
+	   #"bird1"   : settings.project_path + '/media/example1.avi',
 	  }
 a = camera(sources)
 a.erode_kernel      =  (1,1)
@@ -22,10 +17,9 @@ a.open_kernel       =  (1,1)
 a.close_kernel      =  (1,1)
 a.thresh_px         =  200
 a.min_contour_area  =   1
-a.fps               =  30
+a.fps               =  1
 a.save_video        =  True
 a.stitch	        =  False
-a.image_size        =  (640,480)
 a.triggered         =  True
 a.record(timeout=0)
 

@@ -18,7 +18,6 @@ class Camera():
         self.save_video = False
         self.stitch = False
         self.fps = 30
-        self.image_size = (640,480)
         self.triggered = False
         self.names, urls = zip(*sources.items())
         self.caps = [cv2.VideoCapture(url) for url in urls]
@@ -33,9 +32,11 @@ class Camera():
         cv2.namedWindow(name)
         self._create_trackbars(name)
 
-    #--- Image Processing ---#
+    #--- Basic Image Processing ---#
 
     def _get_frame(self, cap): return cap.read()[1]
+
+    def _save_video(self, video_writer, frame): video_writer.write(frame)
     
     def _process(self, frame): return frame
 
@@ -56,11 +57,12 @@ class Camera():
         kernel = np.ones(self.close_kernel, np.uint8)
         return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
 
+    #--- Advanced Image Processing ---#
+
     def _find_contours(self, img):
         img = img[20:480, 0:640] #Ignore Axis Timestamp
         return cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
 
-    def _save_video(self, video_writer, frame): video_writer.write(frame)
 
     def _find_centroids(self, img):
         contours = self._find_contours(img)
@@ -73,16 +75,19 @@ class Camera():
                 centroids = np.append(centroids, [[X, Y]], axis=0)
         return centroids
     
+    #--- Distortion and Stitching --- #    
     def _get_corrections(self, name):
-        path = "{}/corrections/{}.csv".format(settings.project_path, name)
-        df = pd.read_csv(path, sep=',',header=None)
-        print(df.values)
-        return df
+        try:
+            path = "{}/corrections/{}.csv".format(settings.project_path, name)
+            df = pd.read_csv(path, sep=',',header=None)
+            return df.values
+        except:
+            return pd.DataFrame()
 
-    def _correct_distortion(self, img, mtx, dist):
-        if mtx == 0: return img #if mtx, dist say no correction
+    def _correct_distortion(self, img, mtx = 0, dist = 0):
+        if len(mtx) == 0: return img #if mtx, dist say no correction
         h, w = img.shape[:2]
-        newmtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+        newmtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1)
         dst = cv2.undistort(img, mtx, dist, None, newmtx)
         x,y,w,h = roi
         img = dst[y:y+h, x:x+w]
@@ -113,26 +118,33 @@ class Camera():
     #--- Public Method ---#
     def record(self, timeout=0):
         corrections = [self._get_corrections(name) for name in self.names]
+
         
         if self.stitch: self.names = ["combined"]
         if self.save_video:
+            frames = [self._get_frame(cap) for cap in self.caps] 
+            frame_sizes = [(frame.shape[1], frame.shape[0]) for frame in frames]
+ 
             def path(i): return "./media/"+start+"_"+ str(i+1) +".avi"
             start = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')            
+            fourcc = cv2.VideoWriter_fourcc(*'MPEG')            
             video_writers = [cv2.VideoWriter(path(i), fourcc,
-                             self.fps, self.image_size)
+                             self.rec_fps, frame_sizes[i])
                              for i, _ in enumerate(self.names)]
+
 
         for name in self.names: self._create_window(name)
  
+
         starttime = time.time()
         while True if timeout == 0 else time.time() < starttime + timeout:
-            frames= [self._get_frame(cap) for cap in self.caps]
-            c = [(a,*b) for a,b in zip(frames,corrections)]
-            for d in c: print(*d)
-            frames= [self._correct_distortion(*d) for d in c]
+            frames = [self._get_frame(cap) for cap in self.caps]
+            new_frames = []
+           #for a,b in zip(frames, corrections):
+            #    new_frames.append(self._correct_distortion(a,b))
             if self.stitch: frames = [self._stitch(frames)]
-            b = 0    
+         
+            b = 0 
             for i, frame in enumerate(frames):
                 if frame is not None:
                     self._read_trackbars(self.names[i])
@@ -141,9 +153,9 @@ class Camera():
                     if self.save_video:
                         b += 1
                         self._save_video(video_writers[i], frame)
-                else: break
+                else: pass
             if b == 0: break
-            if cv2.waitKey(1) & 0xFF == ord('q'): break
+            if cv2.waitKey(self.fps) & 0xFF == ord('q'): break
                 
         if self.save_video:
             for writer in video_writers: writer.release()
@@ -185,8 +197,10 @@ class Centroid(Camera):
         return img
 
     def _save_video(self, video_writer, frame):
-        if self.triggered and len(self.centroids): super()._save_video(video_writer, frame)
-        else: pass
+        if self.triggered:
+            if len(self.centroids): super()._save_video(video_writer, frame)
+            else: pass
+        else: super()._save_video(video_writer, frame)
 #______________________________________________________________________________#
 
 class CentroidTracking(Centroid):
