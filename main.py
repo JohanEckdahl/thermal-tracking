@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import settings
 from includes.camera import Centroid as camera
-
 sources = {"webcam"   : 0,
 	   #"webcam2"  : 0,
 	   #"camera1" : 'http://root:pass@192.168.0.90/mjpg/video.mjpg',
@@ -11,7 +9,6 @@ sources = {"webcam"   : 0,
 	   #"bird8"   : settings.project_path + '/media/bird8.mp4',
 	   #"bird1"   : settings.project_path + '/media/bird1.mp4',
 	  }
-
 a = camera(sources)
 a.erode_kernel      =  (1,1)
 a.open_kernel       =  (1,1)

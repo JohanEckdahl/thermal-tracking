@@ -3,6 +3,7 @@ import cv2
 import time
 from .tracker import *
 from datetime import datetime
+import settings
 
 
 class Camera():
@@ -68,9 +69,13 @@ class Camera():
                 centroids = np.append(centroids, [[X, Y]], axis=0)
         return centroids
     
-    def _get_corrections(self, name): return 0, 0 #mtx, dist
+    def _get_corrections(self, name):
+        path = "{}/corrections/{}.csv".format(settings.project_path, name)
+        df = pd.read_csv(path, sep=',',header=None)
+        print(df.values)
+        return df
 
-    def _correct_distortion(self,img, mtx, dist):
+    def _correct_distortion(self, img, mtx, dist):
         if mtx == 0: return img #if mtx, dist say no correction
         h, w = img.shape[:2]
         newmtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
@@ -120,6 +125,7 @@ class Camera():
         while True if timeout == 0 else time.time() < starttime + timeout:
             frames= [self._get_frame(cap) for cap in self.caps]
             c = [(a,*b) for a,b in zip(frames,corrections)]
+            for d in c: print(*d)
             frames= [self._correct_distortion(*d) for d in c]
             if self.stitch: frames = [self._stitch(frames)]
                 
